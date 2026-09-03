@@ -124,6 +124,7 @@ public class DiceAdapter extends RecyclerView.Adapter<DiceAdapter.DiceViewHolder
         private final ColorStateList defaultStrokeColor;
         private final int defaultStrokeWidth;
         private final int lockedStrokeWidth;
+        private final float nudgeTranslation;
         private boolean locked;
         private final int[] diceColors = {
             R.color.diceColor0, R.color.diceColor1, R.color.diceColor2,
@@ -137,8 +138,9 @@ public class DiceAdapter extends RecyclerView.Adapter<DiceAdapter.DiceViewHolder
             this.binding = binding;
             this.defaultStrokeColor = binding.diceCv.getStrokeColorStateList();
             this.defaultStrokeWidth = binding.diceCv.getStrokeWidth();
-            this.lockedStrokeWidth =
-                    Math.round(2 * binding.getRoot().getResources().getDisplayMetrics().density);
+            float density = binding.getRoot().getResources().getDisplayMetrics().density;
+            this.lockedStrokeWidth = Math.round(2 * density);
+            this.nudgeTranslation = 6 * density;
             binding.getRoot()
                     .setOnClickListener(
                             new View.OnClickListener() {
@@ -183,6 +185,19 @@ public class DiceAdapter extends RecyclerView.Adapter<DiceAdapter.DiceViewHolder
                             if (position != RecyclerView.NO_POSITION) {
                                 listener.onToggleLock(position);
                             }
+                        }
+                    });
+            // The button consumes touches, so without this a long press on the
+            // lock corner would be swallowed instead of removing the die.
+            binding.btnLock.setOnLongClickListener(
+                    new View.OnLongClickListener() {
+                        @Override
+                        public boolean onLongClick(View v) {
+                            int position = getAdapterPosition();
+                            if (position != RecyclerView.NO_POSITION) {
+                                listener.onRemoveDie(position);
+                            }
+                            return true;
                         }
                     });
         }
@@ -232,14 +247,14 @@ public class DiceAdapter extends RecyclerView.Adapter<DiceAdapter.DiceViewHolder
             cancelAndResetTile();
 
             root.animate()
-                    .translationX(6f)
+                    .translationX(nudgeTranslation)
                     .setDuration(45)
                     .withEndAction(
                             new Runnable() {
                                 @Override
                                 public void run() {
                                     root.animate()
-                                            .translationX(-6f)
+                                            .translationX(-nudgeTranslation)
                                             .setDuration(45)
                                             .withEndAction(
                                                     new Runnable() {

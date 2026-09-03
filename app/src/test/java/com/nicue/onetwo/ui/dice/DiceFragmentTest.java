@@ -5,8 +5,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import android.view.Menu;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule;
 import androidx.fragment.app.testing.FragmentScenario;
@@ -130,5 +132,72 @@ public class DiceFragmentTest {
                 View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY),
                 View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.EXACTLY));
         view.layout(0, 0, 1080, 1920);
+    }
+
+    @Test
+    public void lockButtonLongPress_stillRemovesTheDie() {
+        FragmentScenario<DiceFragment> scenario =
+                FragmentScenario.launchInContainer(DiceFragment.class, null, R.style.AppTheme);
+
+        scenario.onFragment(
+                fragment -> {
+                    DiceViewModel viewModel = clearedViewModel(fragment);
+                    viewModel.addDie(6);
+
+                    RecyclerView recyclerView =
+                            fragment.getView().findViewById(R.id.recyclerview_dice);
+                    layOut(recyclerView);
+
+                    ImageButton lockButton = recyclerView.getChildAt(0).findViewById(R.id.btn_lock);
+                    lockButton.performLongClick();
+
+                    assertTrue(viewModel.getUiState().getValue().getDice().isEmpty());
+                });
+    }
+
+    @Test
+    public void rollAllAction_isDisabledWhenNothingCanBeRolled() {
+        FragmentScenario<DiceFragment> scenario =
+                FragmentScenario.launchInContainer(DiceFragment.class, null, R.style.AppTheme);
+
+        scenario.onFragment(
+                fragment -> {
+                    DiceViewModel viewModel = clearedViewModel(fragment);
+
+                    Menu menu = inflateDiceMenu(fragment);
+                    fragment.onPrepareMenu(menu);
+                    assertFalse(menu.findItem(R.id.action_roll_all).isEnabled());
+                    assertFalse(menu.findItem(R.id.action_unlock_all).isVisible());
+
+                    viewModel.addDie(6);
+                    fragment.onPrepareMenu(menu);
+                    assertTrue(menu.findItem(R.id.action_roll_all).isEnabled());
+                    assertFalse(menu.findItem(R.id.action_unlock_all).isVisible());
+
+                    viewModel.toggleLock(0);
+                    fragment.onPrepareMenu(menu);
+                    assertFalse(menu.findItem(R.id.action_roll_all).isEnabled());
+                    assertTrue(menu.findItem(R.id.action_unlock_all).isVisible());
+
+                    viewModel.unlockAllDice();
+                    fragment.onPrepareMenu(menu);
+                    assertTrue(menu.findItem(R.id.action_roll_all).isEnabled());
+                    assertFalse(menu.findItem(R.id.action_unlock_all).isVisible());
+                });
+    }
+
+    private static Menu inflateDiceMenu(DiceFragment fragment) {
+        PopupMenu popupMenu = new PopupMenu(fragment.requireContext(), fragment.getView());
+        popupMenu.getMenuInflater().inflate(R.menu.dice_actions, popupMenu.getMenu());
+        return popupMenu.getMenu();
+    }
+
+    private static DiceViewModel clearedViewModel(DiceFragment fragment) {
+        DiceViewModel viewModel =
+                new androidx.lifecycle.ViewModelProvider(fragment).get(DiceViewModel.class);
+        while (!viewModel.getUiState().getValue().getDice().isEmpty()) {
+            viewModel.removeDie(0);
+        }
+        return viewModel;
     }
 }

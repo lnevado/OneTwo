@@ -129,6 +129,10 @@ public class DiceFragment extends Fragment implements DiceAdapter.Listener, Menu
         if (unlockAll != null) {
             unlockAll.setVisible(hasLockedDice);
         }
+        MenuItem rollAll = menu.findItem(R.id.action_roll_all);
+        if (rollAll != null) {
+            rollAll.setEnabled(hasRollableDice);
+        }
     }
 
     @Override
@@ -208,9 +212,11 @@ public class DiceFragment extends Fragment implements DiceAdapter.Listener, Menu
     }
 
     private void updateLockActionState(DiceUiState state) {
+        boolean lockedChanged = hasLockedDice != state.hasLockedDice();
+        boolean rollableChanged = hasRollableDice != state.hasRollableDice();
+        hasLockedDice = state.hasLockedDice();
         hasRollableDice = state.hasRollableDice();
-        if (hasLockedDice != state.hasLockedDice()) {
-            hasLockedDice = state.hasLockedDice();
+        if (lockedChanged || rollableChanged) {
             requireActivity().invalidateMenu();
         }
     }
