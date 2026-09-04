@@ -3,7 +3,6 @@ package com.nicue.onetwo.ui.dice;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.Vibrator;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -53,27 +52,35 @@ public class DiceFragment extends Fragment implements DiceAdapter.Listener, Menu
 
         binding.fabDice.setScaleX(0f);
         binding.fabDice.setScaleY(0f);
-        new Handler()
-                .postDelayed(
-                        new Runnable() {
-                            @Override
-                            public void run() {
-                                if (binding == null) {
-                                    return;
-                                }
-                                binding.fabDice
-                                        .animate()
-                                        .scaleX(1f)
-                                        .setInterpolator(new DecelerateInterpolator(2))
-                                        .start();
-                                binding.fabDice
-                                        .animate()
-                                        .scaleY(1f)
-                                        .setInterpolator(new DecelerateInterpolator(2))
-                                        .start();
-                            }
-                        },
-                        300);
+        // Posted on the view so it is dropped automatically if the view goes away, and the end
+        // action pins the final scale: nothing else in the app ever resets it, so an entrance
+        // animation that does not finish would leave the button invisible for good.
+        binding.fabDice.postDelayed(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        if (binding == null) {
+                            return;
+                        }
+                        binding.fabDice
+                                .animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setInterpolator(new DecelerateInterpolator(2))
+                                .withEndAction(
+                                        new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                if (binding != null) {
+                                                    binding.fabDice.setScaleX(1f);
+                                                    binding.fabDice.setScaleY(1f);
+                                                }
+                                            }
+                                        })
+                                .start();
+                    }
+                },
+                300);
         binding.fabDice.setOnClickListener(
                 new View.OnClickListener() {
                     @Override

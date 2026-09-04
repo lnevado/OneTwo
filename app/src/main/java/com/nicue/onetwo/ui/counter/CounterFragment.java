@@ -2,7 +2,6 @@ package com.nicue.onetwo.ui.counter;
 
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.os.Handler;
 import android.text.InputType;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -101,27 +100,35 @@ public class CounterFragment extends Fragment implements CounterListAdapter.List
 
         binding.fab.setScaleX(0f);
         binding.fab.setScaleY(0f);
-        new Handler()
-                .postDelayed(
-                        new Runnable() {
-                            @Override
-                            public void run() {
-                                if (binding == null) {
-                                    return;
-                                }
-                                binding.fab
-                                        .animate()
-                                        .scaleX(1f)
-                                        .setInterpolator(new DecelerateInterpolator(2))
-                                        .start();
-                                binding.fab
-                                        .animate()
-                                        .scaleY(1f)
-                                        .setInterpolator(new DecelerateInterpolator(2))
-                                        .start();
-                            }
-                        },
-                        300);
+        // Posted on the view so it is dropped automatically if the view goes away, and the end
+        // action pins the final scale: nothing else in the app ever resets it, so an entrance
+        // animation that does not finish would leave the button invisible for good.
+        binding.fab.postDelayed(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        if (binding == null) {
+                            return;
+                        }
+                        binding.fab
+                                .animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setInterpolator(new DecelerateInterpolator(2))
+                                .withEndAction(
+                                        new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                if (binding != null) {
+                                                    binding.fab.setScaleX(1f);
+                                                    binding.fab.setScaleY(1f);
+                                                }
+                                            }
+                                        })
+                                .start();
+                    }
+                },
+                300);
         binding.fab.setOnClickListener(
                 new View.OnClickListener() {
                     @Override
