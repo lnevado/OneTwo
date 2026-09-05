@@ -49,7 +49,6 @@
         android:src="@drawable/ic_plus_white_24dp"
         app:fabSize="normal"
         app:backgroundTint="?attr/colorSecondaryContainer"
-        app:tint="?attr/colorOnSecondaryContainer"
-        app:layout_behavior="com.nicue.onetwo.utils.ScrollAwareFABBehavior" />
+        app:tint="?attr/colorOnSecondaryContainer" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
