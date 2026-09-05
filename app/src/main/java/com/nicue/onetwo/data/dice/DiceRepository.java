@@ -9,11 +9,11 @@ public class DiceRepository {
         this.dataSource = dataSource;
     }
 
-    public List<Integer> readDiceFaces() {
-        return dataSource.readDiceFaces();
+    public List<DieRecord> readDice() {
+        return dataSource.readDice();
     }
 
-    public void writeDiceFaces(List<Integer> faces) {
-        dataSource.writeDiceFaces(faces);
+    public void writeDice(List<DieRecord> dice) {
+        dataSource.writeDice(dice);
     }
 }

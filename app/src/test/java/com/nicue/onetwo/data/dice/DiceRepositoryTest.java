@@ -3,17 +3,14 @@ package com.nicue.onetwo.data.dice;
 import static org.junit.Assert.assertEquals;
 
 import android.content.Context;
-
 import androidx.test.core.app.ApplicationProvider;
-
+import java.util.Arrays;
+import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
-
-import java.util.Arrays;
-import java.util.List;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34)
@@ -32,9 +29,17 @@ public class DiceRepositoryTest {
 
     @Test
     public void writeAndReadDiceDefinitions_roundTripInPreferences() {
-        List<Integer> diceFaces = Arrays.asList(6, 10, 20);
-        diceRepository.writeDiceFaces(diceFaces);
+        List<DieRecord> dice =
+                Arrays.asList(
+                        new DieRecord(6, 0, ""),
+                        new DieRecord(10, 1, ""),
+                        new DieRecord(20, 2, ""));
+        diceRepository.writeDice(dice);
 
-        assertEquals(diceFaces, diceRepository.readDiceFaces());
+        List<DieRecord> restored = diceRepository.readDice();
+        assertEquals(3, restored.size());
+        assertEquals(6, restored.get(0).getFaces());
+        assertEquals(10, restored.get(1).getFaces());
+        assertEquals(20, restored.get(2).getFaces());
     }
 }

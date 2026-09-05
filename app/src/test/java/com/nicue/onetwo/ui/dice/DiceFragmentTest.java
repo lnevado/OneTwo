@@ -4,12 +4,19 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.robolectric.Shadows.shadowOf;
 
+import android.content.DialogInterface;
+import android.os.Looper;
 import android.view.Menu;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.EditText;
+import android.widget.GridLayout;
 import android.widget.ImageButton;
 import android.widget.PopupMenu;
 import android.widget.TextView;
+import androidx.appcompat.app.AlertDialog;
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule;
 import androidx.fragment.app.testing.FragmentScenario;
 import androidx.recyclerview.widget.RecyclerView;
@@ -22,6 +29,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowAlertDialog;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34)
@@ -183,6 +191,74 @@ public class DiceFragmentTest {
                     fragment.onPrepareMenu(menu);
                     assertTrue(menu.findItem(R.id.action_roll_all).isEnabled());
                     assertFalse(menu.findItem(R.id.action_unlock_all).isVisible());
+                });
+    }
+
+    @Test
+    public void customiseButton_appliesColourAndLabelOnSave() {
+        FragmentScenario<DiceFragment> scenario =
+                FragmentScenario.launchInContainer(DiceFragment.class, null, R.style.AppTheme);
+
+        scenario.onFragment(
+                fragment -> {
+                    DiceViewModel viewModel = clearedViewModel(fragment);
+                    viewModel.addDie(20);
+
+                    RecyclerView recyclerView =
+                            fragment.getView().findViewById(R.id.recyclerview_dice);
+                    layOut(recyclerView);
+
+                    ImageButton customise =
+                            recyclerView.getChildAt(0).findViewById(R.id.btn_customise);
+                    assertNotNull(customise);
+                    customise.performClick();
+
+                    AlertDialog dialog = (AlertDialog) ShadowAlertDialog.getLatestDialog();
+                    assertNotNull("customise button should open a dialog", dialog);
+
+                    EditText labelField = dialog.findViewById(R.id.et_die_label);
+                    labelField.setText("dmg");
+                    GridLayout swatches = dialog.findViewById(R.id.grid_dice_colors);
+                    assertEquals(10, swatches.getChildCount());
+                    swatches.getChildAt(5).performClick();
+
+                    // The dialog's button callback is posted, so it has to be flushed.
+                    dialog.getButton(DialogInterface.BUTTON_POSITIVE).performClick();
+                    shadowOf(Looper.getMainLooper()).idle();
+
+                    DieUiModel die = viewModel.getUiState().getValue().getDice().get(0);
+                    assertEquals("dmg", die.getLabel());
+                    assertEquals(5, die.getColorIndex());
+                });
+    }
+
+    @Test
+    public void labelledDie_replacesTheDieTypeBadgeAndTheChipText() {
+        FragmentScenario<DiceFragment> scenario =
+                FragmentScenario.launchInContainer(DiceFragment.class, null, R.style.AppTheme);
+
+        scenario.onFragment(
+                fragment -> {
+                    DiceViewModel viewModel = clearedViewModel(fragment);
+                    viewModel.addDie(20);
+
+                    RecyclerView recyclerView =
+                            fragment.getView().findViewById(R.id.recyclerview_dice);
+                    layOut(recyclerView);
+                    TextView badge = recyclerView.getChildAt(0).findViewById(R.id.tv_die_type);
+                    assertEquals("d20", badge.getText().toString());
+
+                    viewModel.setDieAppearance(0, 3, "dmg");
+                    layOut(recyclerView);
+
+                    badge = recyclerView.getChildAt(0).findViewById(R.id.tv_die_type);
+                    assertEquals("dmg", badge.getText().toString());
+
+                    ViewGroup chips = fragment.getView().findViewById(R.id.chip_group_dice_results);
+                    assertEquals(1, chips.getChildCount());
+                    assertEquals(
+                            "dmg: " + viewModel.getUiState().getValue().getDice().get(0).getValue(),
+                            ((TextView) chips.getChildAt(0)).getText().toString());
                 });
     }
 

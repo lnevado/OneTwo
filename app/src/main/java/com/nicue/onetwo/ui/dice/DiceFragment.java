@@ -2,9 +2,11 @@ package com.nicue.onetwo.ui.dice;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Vibrator;
+import android.text.Editable;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -13,6 +15,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.animation.DecelerateInterpolator;
+import android.widget.GridLayout;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -23,10 +26,12 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
+import com.google.android.material.color.MaterialColors;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.nicue.onetwo.OneTwoApplication;
 import com.nicue.onetwo.R;
 import com.nicue.onetwo.databinding.DiceAlertDialogBinding;
+import com.nicue.onetwo.databinding.DiceAppearanceDialogBinding;
 import com.nicue.onetwo.databinding.DiceLayoutBinding;
 import java.util.List;
 
@@ -35,6 +40,7 @@ public class DiceFragment extends Fragment implements DiceAdapter.Listener, Menu
     private DiceAdapter adapter;
     private DiceViewModel viewModel;
     private boolean hasLockedDice;
+    private AlertDialog appearanceDialog;
     private boolean hasRollableDice;
 
     @Nullable @Override
@@ -109,6 +115,11 @@ public class DiceFragment extends Fragment implements DiceAdapter.Listener, Menu
 
     @Override
     public void onDestroyView() {
+        // Rotating with this open would otherwise leak the window along with the activity.
+        if (appearanceDialog != null) {
+            appearanceDialog.dismiss();
+            appearanceDialog = null;
+        }
         if (binding != null) {
             binding.fabDice.animate().cancel();
             binding.diceSummaryCard.animate().cancel();
@@ -200,6 +211,93 @@ public class DiceFragment extends Fragment implements DiceAdapter.Listener, Menu
     @Override
     public void onRemoveDie(int position) {
         viewModel.removeDie(position);
+    }
+
+    @Override
+    public void onCustomiseDie(int position) {
+        if (binding == null) {
+            return;
+        }
+        DiceUiState state = viewModel.getUiState().getValue();
+        if (state == null || position < 0 || position >= state.getDice().size()) {
+            return;
+        }
+        showAppearanceDialog(position, state.getDice().get(position));
+    }
+
+    private void showAppearanceDialog(final int position, DieUiModel die) {
+        final DiceAppearanceDialogBinding dialogBinding =
+                DiceAppearanceDialogBinding.inflate(getLayoutInflater());
+        final int[] selectedColor = {die.getColorIndex()};
+        dialogBinding.etDieLabel.setText(die.getLabel());
+        dialogBinding.etDieLabel.setSelection(die.getLabel().length());
+
+        final View[] swatches = new View[DiceAdapter.DICE_COLORS.length];
+        for (int i = 0; i < DiceAdapter.DICE_COLORS.length; i++) {
+            final int colorIndex = i;
+            View swatch = buildColorSwatch(colorIndex);
+            swatch.setOnClickListener(
+                    new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            selectedColor[0] = colorIndex;
+                            for (int j = 0; j < swatches.length; j++) {
+                                markSwatchSelected(swatches[j], j == colorIndex);
+                            }
+                        }
+                    });
+            swatches[i] = swatch;
+            markSwatchSelected(swatch, i == selectedColor[0]);
+            dialogBinding.gridDiceColors.addView(swatch);
+        }
+
+        appearanceDialog =
+                new MaterialAlertDialogBuilder(requireContext())
+                        .setTitle(R.string.dice_appearance_title)
+                        .setView(dialogBinding.getRoot())
+                        .setPositiveButton(
+                                R.string.save,
+                                new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        Editable label = dialogBinding.etDieLabel.getText();
+                                        viewModel.setDieAppearance(
+                                                position,
+                                                selectedColor[0],
+                                                label == null ? "" : label.toString());
+                                    }
+                                })
+                        .setNegativeButton(R.string.cancel, null)
+                        .show();
+    }
+
+    private View buildColorSwatch(int colorIndex) {
+        int size = Math.round(44 * getResources().getDisplayMetrics().density);
+        int margin = Math.round(4 * getResources().getDisplayMetrics().density);
+
+        View swatch = new View(requireContext());
+        GridLayout.LayoutParams params = new GridLayout.LayoutParams();
+        params.width = size;
+        params.height = size;
+        params.setMargins(margin, margin, margin, margin);
+        swatch.setLayoutParams(params);
+        swatch.setContentDescription(
+                getString(R.string.content_desc_dice_color_swatch, colorIndex + 1));
+        swatch.setTag(getResources().getColor(DiceAdapter.DICE_COLORS[colorIndex]));
+        return swatch;
+    }
+
+    private void markSwatchSelected(View swatch, boolean selected) {
+        GradientDrawable shape = new GradientDrawable();
+        shape.setShape(GradientDrawable.OVAL);
+        shape.setColor((Integer) swatch.getTag());
+        if (selected) {
+            int strokeWidth = Math.round(3 * getResources().getDisplayMetrics().density);
+            shape.setStroke(strokeWidth, MaterialColors.getColor(swatch, R.attr.colorOnSurface));
+        }
+        swatch.setBackground(shape);
+        // Without this the stroke is the only cue, which says nothing to a screen reader.
+        swatch.setSelected(selected);
     }
 
     @Override
@@ -313,7 +411,13 @@ public class DiceFragment extends Fragment implements DiceAdapter.Listener, Menu
                                             R.layout.dice_result_chip,
                                             binding.chipGroupDiceResults,
                                             false);
-            chip.setText(getString(R.string.dice_result_chip, die.getFaces(), die.getValue()));
+            chip.setText(
+                    die.hasLabel()
+                            ? getString(
+                                    R.string.dice_result_chip_labelled,
+                                    die.getLabel(),
+                                    die.getValue())
+                            : getString(R.string.dice_result_chip, die.getFaces(), die.getValue()));
             binding.chipGroupDiceResults.addView(chip);
         }
     }

@@ -38,6 +38,12 @@
     <string name="dice_empty_results">Add dice to start rolling</string>
     <string name="dice_type_label" translatable="false">d%1$d</string>
     <string name="dice_result_chip">d%1$d: %2$d</string>
+    <string name="dice_result_chip_labelled">%1$s: %2$d</string>
+    <string name="dice_appearance_title">Die appearance</string>
+    <string name="dice_appearance_color">Colour</string>
+    <string name="dice_appearance_label">Label</string>
+    <string name="dice_appearance_label_hint">Optional name</string>
+    <string name="content_desc_dice_color_swatch">Colour %1$d</string>
     <string name="add_timer">Add </string>
     <string name="remove_timer">Remove</string>
     <string name="space">      </string>
@@ -92,6 +98,7 @@
     <string name="content_desc_add_counter">Add Counter</string>
     <string name="content_desc_roll_dice">Roll Dice</string>
     <string name="content_desc_lock_die">Lock die</string>
+    <string name="content_desc_customise_die">Customise die</string>
     <string name="content_desc_unlock_die">Unlock die</string>
 
     <string name="menu_mtg_life">Life Counter</string>

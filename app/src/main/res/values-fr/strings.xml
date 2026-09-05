@@ -70,4 +70,11 @@
     <string name="mtg_player_timer_desc">Temps restant du joueur %1$d : %2$s</string>
     <string name="mtg_setup_coach_mark">Paramètres de partie, minuteur et sélecteur tactile</string>
 
+    <string name="content_desc_customise_die">Personnaliser le dé</string>
+    <string name="dice_appearance_title">Apparence du dé</string>
+    <string name="dice_appearance_color">Couleur</string>
+    <string name="dice_appearance_label">Étiquette</string>
+    <string name="dice_appearance_label_hint">Nom facultatif</string>
+    <string name="content_desc_dice_color_swatch">Couleur %1$d</string>
+    <string name="dice_result_chip_labelled">%1$s: %2$d</string>
 </resources>
