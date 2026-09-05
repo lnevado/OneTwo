@@ -20,7 +20,16 @@ public class DiceAdapter extends RecyclerView.Adapter<DiceAdapter.DiceViewHolder
         void onRemoveDie(int position);
 
         void onToggleLock(int position);
+
+        void onCustomiseDie(int position);
     }
+
+    static final int[] DICE_COLORS = {
+        R.color.diceColor0, R.color.diceColor1, R.color.diceColor2,
+        R.color.diceColor3, R.color.diceColor4, R.color.diceColor5,
+        R.color.diceColor6, R.color.diceColor7, R.color.diceColor8,
+        R.color.diceColor9
+    };
 
     private final Listener listener;
     private List<DieUiModel> dice = new ArrayList<>();
@@ -74,7 +83,9 @@ public class DiceAdapter extends RecyclerView.Adapter<DiceAdapter.DiceViewHolder
                                 DieUiModel newItem = newDice.get(newItemPosition);
                                 return oldItem.getFaces() == newItem.getFaces()
                                         && oldItem.getValue() == newItem.getValue()
-                                        && oldItem.isLocked() == newItem.isLocked();
+                                        && oldItem.isLocked() == newItem.isLocked()
+                                        && oldItem.getColorIndex() == newItem.getColorIndex()
+                                        && oldItem.getLabel().equals(newItem.getLabel());
                             }
                         });
         this.dice = newDice == null ? new ArrayList<DieUiModel>() : new ArrayList<>(newDice);
@@ -126,12 +137,6 @@ public class DiceAdapter extends RecyclerView.Adapter<DiceAdapter.DiceViewHolder
         private final int lockedStrokeWidth;
         private final float nudgeTranslation;
         private boolean locked;
-        private final int[] diceColors = {
-            R.color.diceColor0, R.color.diceColor1, R.color.diceColor2,
-            R.color.diceColor3, R.color.diceColor4, R.color.diceColor5,
-            R.color.diceColor6, R.color.diceColor7, R.color.diceColor8,
-            R.color.diceColor9
-        };
 
         DiceViewHolder(DiceItemBinding binding) {
             super(binding.getRoot());
@@ -187,8 +192,29 @@ public class DiceAdapter extends RecyclerView.Adapter<DiceAdapter.DiceViewHolder
                             }
                         }
                     });
-            // The button consumes touches, so without this a long press on the
-            // lock corner would be swallowed instead of removing the die.
+            binding.btnCustomise.setOnClickListener(
+                    new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            int position = getAdapterPosition();
+                            if (position != RecyclerView.NO_POSITION) {
+                                listener.onCustomiseDie(position);
+                            }
+                        }
+                    });
+            binding.btnCustomise.setOnLongClickListener(
+                    new View.OnLongClickListener() {
+                        @Override
+                        public boolean onLongClick(View v) {
+                            int position = getAdapterPosition();
+                            if (position != RecyclerView.NO_POSITION) {
+                                listener.onRemoveDie(position);
+                            }
+                            return true;
+                        }
+                    });
+            // These buttons consume touches, so without forwarding, a long press
+            // on either corner would be swallowed instead of removing the die.
             binding.btnLock.setOnLongClickListener(
                     new View.OnLongClickListener() {
                         @Override
@@ -287,8 +313,7 @@ public class DiceAdapter extends RecyclerView.Adapter<DiceAdapter.DiceViewHolder
 
         void bind(DieUiModel dieUiModel) {
             int faces = dieUiModel.getFaces();
-            int position = getAdapterPosition();
-            int colorRes = diceColors[position % diceColors.length];
+            int colorRes = DICE_COLORS[dieUiModel.getColorIndex() % DICE_COLORS.length];
             int color = binding.getRoot().getContext().getResources().getColor(colorRes);
 
             cancelAndResetTile();
@@ -305,8 +330,17 @@ public class DiceAdapter extends RecyclerView.Adapter<DiceAdapter.DiceViewHolder
             binding.ivRollIndicator.setColorFilter(iconTint);
 
             binding.tvDice.setText(String.valueOf(dieUiModel.getValue()));
-            binding.tvDieType.setText(
-                    binding.getRoot().getContext().getString(R.string.dice_type_label, faces));
+            // A labelled die shows its name instead of its die type; the die glyph in the corner
+            // still says which die it is.
+            String dieType =
+                    binding.getRoot().getContext().getString(R.string.dice_type_label, faces);
+            binding.tvDieType.setText(dieUiModel.hasLabel() ? dieUiModel.getLabel() : dieType);
+            // The die glyph is decorative and hidden from accessibility, so a labelled die would
+            // otherwise announce no die type at all.
+            binding.tvDieType.setContentDescription(
+                    dieUiModel.hasLabel() ? dieUiModel.getLabel() + ", " + dieType : dieType);
+            binding.btnCustomise.setColorFilter(textColor);
+            binding.btnCustomise.setAlpha(0.5f);
 
             bindLockState(dieUiModel.isLocked(), textColor);
         }

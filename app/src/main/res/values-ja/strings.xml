@@ -70,4 +70,11 @@
     <string name="mtg_player_timer_desc">プレイヤー%1$dの残り時間: %2$s</string>
     <string name="mtg_setup_coach_mark">ゲーム設定、タイマー、指で選ぶ機能</string>
 
+    <string name="content_desc_customise_die">サイコロをカスタマイズ</string>
+    <string name="dice_appearance_title">サイコロの外観</string>
+    <string name="dice_appearance_color">色</string>
+    <string name="dice_appearance_label">ラベル</string>
+    <string name="dice_appearance_label_hint">名前（任意）</string>
+    <string name="content_desc_dice_color_swatch">色 %1$d</string>
+    <string name="dice_result_chip_labelled">%1$s: %2$d</string>
 </resources>
